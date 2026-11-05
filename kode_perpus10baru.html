@@ -1,0 +1,418 @@
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DUNIA PEMINJAMAN BUKU TENTANG PENGETAHUAN</title>
+
+    <link rel="stylesheet" href="perpus.css" />
+  </head>
+  <body>
+    <header>
+      <!-- NAVIGATION BAR -->
+      <div class="brand">
+        <div class="logo">📚</div>
+        <div>
+          <h1>PERPUSTAKAAN UMUM UNTUK MENAMBAH ILMU YANG LEBI BANYAK</h1>
+          <p class="subtitle">Sistem Peminjaman Buku Sangat Sederhana</p>
+        </div>
+      </div>
+      <nav>
+        <a href="peminjaman.html">Peminjaman</a>
+        <a href="data_peminjaman.html">Data Peminjaman</a>
+        <a href="aturan.html">Auran</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h2>Tambahkan ilmu, satu buku setiap saat.</h2>
+          <p>
+            Catat peminjaman buku, hitung denda keterlambatan secara otomatis,
+            dan pantau status pengembalian dalam satu halaman.
+          </p>
+        </div>
+        <div class="bookart" aria-hidden="true">
+          <a href="https://www.instagram.com/onl_yibnu/#" class="a-content">
+            <p>
+              <img src="buku terbuka.png" class="img-content" />
+            </p>
+          </a>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Ringkasan">
+        <div class="stat">
+          <span>Total peminjaman</span>
+          <strong id="total">0</strong>
+        </div>
+        <div class="stat">
+          <span>Belum dikembalikan</span>
+          <strong id="aktif">0</strong>
+        </div>
+        <div class="stat">
+          <span>Total denda</span>
+          <strong id="denda">Rp&nbsp;0</strong>
+        </div>
+      </section>
+
+      <div class="layout">
+        <section class="panel" id="form-peminjaman">
+          <h3>Form Peminjaman Buku</h3>
+          <p class="desc">
+            Masukkan data peminjam dan lama peminjaman. Maksimal lama pinjam
+            pada contoh ini adalah 7 hari.
+          </p>
+          <form id="loanForm">
+            <label for="nama">Nama peminjam</label>
+            <input
+              id="nama"
+              required
+              maxlength="60"
+              placeholder="Contoh: Brayen boyben"
+            />
+
+            <label for="telepon">Nomor telepon</label>
+            <input
+              id="telepon"
+              type="tel"
+              required
+              maxlength="20"
+              autocomplete="tel"
+              placeholder="Contoh: 081234567890"
+            />
+
+            <label for="buku">Judul buku</label>
+            <input
+              id="buku"
+              required
+              maxlength="100"
+              placeholder="Contoh: Dasar-Dasar Pemrograman"
+            />
+
+            <label for="tanggal">Tanggal peminjaman</label>
+            <input id="tanggal" type="date" required />
+
+            <label for="lama">Lama peminjaman (hari)</label>
+            <input
+              id="lama"
+              type="number"
+              min="1"
+              max="365"
+              value="7 HARI"
+              required
+            />
+
+            <button class="primary" type="submit">Catat Peminjaman</button>
+          </form>
+          <div id="message" class="message" role="status"></div>
+          <div id="result" class="result" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" id="daftar">
+          <h3>Data Peminjaman</h3>
+          <p class="desc">
+            Gunakan tombol “Kembalikan” ketika buku sudah diterima kembali oleh
+            petugas. Tombol WhatsApp membuka pesan pengingat yang siap dikirim;
+            tekan “Kirim” di WhatsApp untuk mengirimnya.
+          </p>
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Peminjam &amp; Buku</th>
+                  <th>Batas kembali</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+                <tr>
+                  <td colspan="4" class="empty">Belum ada data peminjaman.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel rules" id="aturan">
+        <h3>Aturan Peminjaman</h3>
+        <ul>
+          <li>Lama peminjaman contoh: maksimal 7 hari.</li>
+          <li>
+            Denda keterlambatan: Rp2.000 per hari setelah tanggal batas
+            pengembalian.
+          </li>
+          <li>
+            Jika dikembalikan tepat waktu atau lebih awal, denda adalah Rp0.
+          </li>
+          <li>
+            Perhitungan menggunakan tanggal pengembalian saat tombol
+            “Kembalikan” ditekan.
+          </li>
+        </ul>
+        <p class="desc" style="margin-top: 12px; margin-bottom: 0">
+          Catatan: aturan denda dan durasi di atas adalah contoh untuk tugas dan
+          dapat disesuaikan dengan kebijakan perpustakaan.
+        </p>
+      </section>
+    </main>
+
+    <div class="footer">
+      Project Algoritma dan Pemrograman 1 · Program Peminjaman Buku Sederhana
+    </div>
+  </body>
+</html>
+
+<script>
+  const FINE_PER_DAY = 2000;
+  const MAX_DAYS = 7;
+  let loans = [];
+
+  const $ = (id) => document.getElementById(id);
+  const today = new Date();
+
+  const localDate = (d) => {
+    const copy = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return copy.toISOString().slice(0, 10);
+  };
+
+  $("tanggal").value = localDate(today);
+
+  function addDays(dateStr, days) {
+    const d = new Date(dateStr + "T12:00:00");
+    d.setDate(d.getDate() + days);
+    return localDate(d);
+  }
+
+  function formatDate(s) {
+    return new Date(s + "T12:00:00").toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function rupiah(n) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(n);
+  }
+
+  function showMessage(text, type) {
+    const el = $("message");
+    el.textContent = text;
+    el.className = "message show " + type;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  }
+
+  function getWhatsAppPhone(phone) {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.startsWith("0")) return "62" + digits.slice(1);
+    if (digits.startsWith("8")) return "62" + digits;
+    return digits;
+  }
+
+  function whatsappReminderLink(loan, label) {
+    const message =
+      "Halo " +
+      loan.nama +
+      ', ini pengingat dari Perpustakaan. Buku "' +
+      loan.buku +
+      '" yang Anda pinjam jatuh tempo pada ' +
+      formatDate(loan.batas) +
+      ". Mohon dikembalikan tepat waktu. Terima kasih.";
+    const url =
+      "https://wa.me/" +
+      getWhatsAppPhone(loan.telepon) +
+      "?text=" +
+      encodeURIComponent(message);
+    return (
+      '<a class="secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="' +
+      url +
+      '" target="_blank" rel="noopener noreferrer">' +
+      label +
+      "</a>"
+    );
+  }
+
+  $("loanForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nama = $("nama").value.trim();
+    const telepon = $("telepon").value.trim();
+    const buku = $("buku").value.trim();
+    const tanggal = $("tanggal").value;
+    const lama = Number($("lama").value);
+
+    if (
+      !nama ||
+      !telepon ||
+      !buku ||
+      !tanggal ||
+      !Number.isInteger(lama) ||
+      lama < 1
+    ) {
+      showMessage("Periksa kembali data yang dimasukkan.", "error");
+      return;
+    }
+
+    if (!/^[1-9]\d{7,14}$/.test(getWhatsAppPhone(telepon))) {
+      showMessage(
+        "Masukkan nomor telepon yang valid, contoh: 081234567890.",
+        "error",
+      );
+      return;
+    }
+
+    if (lama > MAX_DAYS) {
+      showMessage(
+        "Lama peminjaman maksimal " + MAX_DAYS + " hari sesuai aturan contoh.",
+        "error",
+      );
+      return;
+    }
+
+    const batas = addDays(tanggal, lama);
+    loans.unshift({
+      id: Date.now() + Math.random(),
+      nama,
+      telepon,
+      buku,
+      tanggal,
+      lama,
+      batas,
+      status: "Dipinjam",
+      denda: 0,
+      tanggalKembali: null,
+    });
+
+    $("result").className = "result show";
+    $("result").innerHTML =
+      "<h4>Peminjaman berhasil dicatat</h4>" +
+      "<p><b>Peminjam:</b> " +
+      escapeHtml(nama) +
+      "</p>" +
+      "<p><b>Nomor telepon:</b> " +
+      escapeHtml(telepon) +
+      "</p>" +
+      "<p><b>Buku:</b> " +
+      escapeHtml(buku) +
+      "</p>" +
+      "<p><b>Tanggal pinjam:</b> " +
+      formatDate(tanggal) +
+      "</p>" +
+      "<p><b>Batas pengembalian:</b> " +
+      formatDate(batas) +
+      "</p>" +
+      "<p><b>Denda saat ini:</b> " +
+      rupiah(0) +
+      "</p><p>" +
+      whatsappReminderLink(loans[0], "Kirim pemberitahuan via WhatsApp") +
+      "</p>";
+
+    showMessage("Data peminjaman berhasil ditambahkan.", "success");
+    $("loanForm").reset();
+    $("tanggal").value = localDate(new Date());
+    $("lama").value = 7;
+    render();
+  });
+
+  function returnBook(id) {
+    const loan = loans.find((x) => x.id === id);
+    if (!loan || loan.status === "Dikembalikan") return;
+
+    const returned = localDate(new Date());
+    const late = Math.max(
+      0,
+      Math.floor(
+        (new Date(returned + "T12:00:00") -
+          new Date(loan.batas + "T12:00:00")) /
+          86400000,
+      ),
+    );
+
+    loan.status = "Dikembalikan";
+    loan.tanggalKembali = returned;
+    loan.denda = late * FINE_PER_DAY;
+
+    render();
+    showMessage(
+      "Buku dikembalikan. Denda: " +
+        rupiah(loan.denda) +
+        (late ? " (" + late + " hari terlambat)." : " (tepat waktu)."),
+      "success",
+    );
+  }
+
+  function render() {
+    $("total").textContent = loans.length;
+    $("aktif").textContent = loans.filter(
+      (x) => x.status === "Dipinjam",
+    ).length;
+    $("denda").textContent = rupiah(loans.reduce((s, x) => s + x.denda, 0));
+
+    const body = $("rows");
+    if (!loans.length) {
+      body.innerHTML =
+        '<tr><td colspan="4" class="empty">Belum ada data peminjaman.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = loans
+      .map(
+        (x) =>
+          "<tr>" +
+          "<td><b>" +
+          escapeHtml(x.nama) +
+          "</b><br>" +
+          "<small>Tel: " +
+          escapeHtml(x.telepon) +
+          "</small><br>" +
+          escapeHtml(x.buku) +
+          "<br><small>" +
+          formatDate(x.tanggal) +
+          "</small></td>" +
+          "<td>" +
+          formatDate(x.batas) +
+          (x.tanggalKembali
+            ? "<br><small>Kembali: " + formatDate(x.tanggalKembali) + "</small>"
+            : "") +
+          "</td>" +
+          '<td><span class="pill ' +
+          (x.status === "Dipinjam" ? "late" : "") +
+          '">' +
+          x.status +
+          "</span><br><small>" +
+          rupiah(x.denda) +
+          "</small></td>" +
+          "<td>" +
+          (x.status === "Dipinjam"
+            ? '<button class="secondary" onclick="returnBook(' +
+              x.id +
+              ')">Kembalikan</button><br>' +
+              whatsappReminderLink(x, "Kirim pengingat WhatsApp")
+            : "—") +
+          "</td>" +
+          "</tr>",
+      )
+      .join("");
+  }
+
+  render();
+</script>
